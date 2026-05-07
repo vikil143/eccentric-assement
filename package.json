@@ -1,0 +1,22 @@
+{
+  "name": "asset-manager",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run --workspaces --if-present dev",
+    "build": "npm run --workspaces --if-present build",
+    "typecheck": "npm run --workspaces --if-present typecheck",
+    "lint": "npm run --workspaces --if-present lint",
+    "format": "npm run --workspaces --if-present format",
+    "test": "npm run --workspaces --if-present test",
+    "test:watch": "npm run --workspaces --if-present test:watch"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
