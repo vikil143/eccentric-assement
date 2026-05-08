@@ -3,7 +3,8 @@ import multer, { MulterError } from 'multer';
 import { z } from 'zod';
 import { env } from '../config/env.js';
 import { AppError } from '../middleware/error.js';
-import { createAsset } from '../services/assetService.js';
+import type { AssetListQuery } from '@asset-manager/shared';
+import { createAsset, listAssets } from '../services/assetService.js';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -51,6 +52,24 @@ function parseUpload(req: Request, res: Response, next: NextFunction): void {
   });
 }
 
+const listQuerySchema = z.object({
+  q: z.string().optional(),
+  kind: z.enum(['image', 'video', 'pdf', 'other']).optional(),
+  tags: z
+    .string()
+    .optional()
+    .transform((s) =>
+      s !== undefined
+        ? s.split(',').map((t) => t.trim()).filter((t) => t.length > 0)
+        : undefined,
+    ),
+  from: z.string().datetime({ offset: true }).optional(),
+  to: z.string().datetime({ offset: true }).optional(),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(24),
+  sort: z.enum(['newest', 'oldest', 'size_desc']).default('newest'),
+});
+
 const bodySchema = z.object({
   // Optional comma-separated string → trimmed, non-empty string array
   tags: z
@@ -62,6 +81,32 @@ const bodySchema = z.object({
 });
 
 const router = Router();
+
+router.get(
+  '/',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const parsed = listQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        const msg = parsed.error.issues[0]?.message ?? 'Invalid query parameters';
+        next(new AppError('VALIDATION_ERROR', msg, 400));
+        return;
+      }
+
+      const { q, kind, tags, from, to, page, pageSize, sort } = parsed.data;
+      const listQuery: AssetListQuery = { page, pageSize, sort };
+      if (q !== undefined) listQuery.q = q;
+      if (kind !== undefined) listQuery.kind = kind;
+      if (tags !== undefined) listQuery.tags = tags;
+      if (from !== undefined) listQuery.from = from;
+      if (to !== undefined) listQuery.to = to;
+
+      res.json(await listAssets(listQuery));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 router.post(
   '/',

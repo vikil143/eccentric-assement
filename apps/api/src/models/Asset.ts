@@ -3,7 +3,7 @@ import type { Asset, AssetKind } from '@asset-manager/shared';
 
 // All optional document fields typed as `T | undefined` (not `?`) so Mongoose and
 // exactOptionalPropertyTypes coexist without conflicts.
-interface IAsset {
+export interface IAsset {
   filename: string;
   mimeType: string;
   cloudinaryPublicId: string;
