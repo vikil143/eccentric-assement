@@ -31,10 +31,10 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center gap-4">
+        <div className="container flex flex-wrap items-center gap-x-4 gap-y-2 py-2 md:h-14 md:flex-nowrap md:py-0">
           <span className="shrink-0 text-lg font-semibold tracking-tight">Marketing Assets</span>
 
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative order-last w-full md:order-none md:max-w-sm md:flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               aria-label="Search assets"

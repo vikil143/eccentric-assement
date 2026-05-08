@@ -240,7 +240,7 @@ function AssetRow({ asset, onDelete }: { asset: Asset; onDelete: (a: Asset) => v
 
 function GridSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
       {Array.from({ length: PAGE_SIZE }, (_, i) => (
         <div key={i} className="overflow-hidden rounded-lg border">
           <Skeleton className="aspect-square w-full" />
@@ -455,7 +455,7 @@ function FilterBar({
         value={kind ?? 'all'}
         onValueChange={(v) => onKindChange(v === 'all' ? undefined : (v as AssetKind))}
       >
-        <SelectTrigger className="h-9 w-[120px]">
+        <SelectTrigger className="h-9 w-[120px]" aria-label="Filter by kind">
           <SelectValue placeholder="Kind" />
         </SelectTrigger>
         <SelectContent>
@@ -692,7 +692,7 @@ export function AssetsPage() {
     );
   } else if (viewMode === 'grid') {
     content = (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         {data.items.map((asset) => (
           <AssetCard key={asset.id} asset={asset} onDelete={setPendingDelete} />
         ))}
@@ -700,16 +700,16 @@ export function AssetsPage() {
     );
   } else {
     content = (
-      <div className="rounded-md border">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-md border">
+        <table className="min-w-[600px] w-full text-sm" aria-label="Assets list">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">File</th>
-              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Kind</th>
-              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Size</th>
-              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Uploaded</th>
-              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Tags</th>
-              <th className="px-4 py-2.5" />
+              <th scope="col" className="px-4 py-2.5 text-left font-medium text-muted-foreground">File</th>
+              <th scope="col" className="px-4 py-2.5 text-left font-medium text-muted-foreground">Kind</th>
+              <th scope="col" className="px-4 py-2.5 text-left font-medium text-muted-foreground">Size</th>
+              <th scope="col" className="px-4 py-2.5 text-left font-medium text-muted-foreground">Uploaded</th>
+              <th scope="col" className="px-4 py-2.5 text-left font-medium text-muted-foreground">Tags</th>
+              <th scope="col" className="px-4 py-2.5" />
             </tr>
           </thead>
           <tbody>

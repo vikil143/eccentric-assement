@@ -150,6 +150,7 @@ export function UploadDialog() {
         {/* Drop zone */}
         <div
           {...getRootProps()}
+          aria-label="File upload area — drag and drop or click to browse"
           className={cn(
             'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors',
             isDragActive
@@ -217,7 +218,7 @@ export function UploadDialog() {
 
         {/* Tag input */}
         <div className="space-y-1.5">
-          <p className="text-sm font-medium">Tags</p>
+          <label htmlFor="upload-tag-input" className="text-sm font-medium">Tags</label>
           <div className="flex min-h-10 flex-wrap gap-1.5 rounded-md border border-input bg-background px-3 py-2 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
             {tags.map((tag) => (
               <Badge key={tag} variant="secondary" className="gap-1 pr-1">
@@ -234,6 +235,7 @@ export function UploadDialog() {
               </Badge>
             ))}
             <input
+              id="upload-tag-input"
               className="min-w-16 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               placeholder={tags.length === 0 ? 'campaign, 2024…' : ''}
               value={tagInput}
