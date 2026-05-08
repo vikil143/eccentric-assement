@@ -131,11 +131,13 @@ This installs packages for `apps/api`, `apps/web`, and `packages/shared` simulta
 
 ## Run the Application
 
-Start **all workspaces** (frontend + backend) concurrently:
+Start **both frontend and backend concurrently** (via `concurrently`):
 
 ```bash
 npm run dev
 ```
+
+You will see labeled, color-coded output — `[api]` in cyan and `[web]` in magenta — so logs from each process are easy to distinguish.
 
 | Service | URL |
 |---|---|
