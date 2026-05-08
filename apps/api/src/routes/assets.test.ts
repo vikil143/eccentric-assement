@@ -20,7 +20,6 @@ import request from 'supertest';
 import { createApp } from '../app.js';
 import { AssetModel } from '../models/Asset.js';
 import { destroy, uploadStream } from '../services/cloudinary.js';
-import type { AssetDocument } from '../models/Asset.js';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
