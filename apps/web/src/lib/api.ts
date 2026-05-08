@@ -58,12 +58,20 @@ export function uploadAsset(
   file: File,
   tags: string[],
   onProgress: (pct: number) => void,
+  signal?: AbortSignal,
 ): Promise<Asset> {
   return new Promise<Asset>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new ApiError(0, { error: { code: 'UPLOAD_ABORTED', message: 'Upload aborted' } }));
+      return;
+    }
+
     const xhr = new XMLHttpRequest();
     const form = new FormData();
     form.append('file', file);
     if (tags.length) form.append('tags', tags.join(','));
+
+    signal?.addEventListener('abort', () => xhr.abort(), { once: true });
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable) {
