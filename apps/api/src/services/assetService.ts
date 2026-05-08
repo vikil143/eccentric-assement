@@ -1,10 +1,12 @@
 import type { Asset, AssetKind, AssetListQuery, AssetListResponse } from '@asset-manager/shared';
+import { isValidObjectId } from 'mongoose';
 import type { QueryFilter } from 'mongoose';
 import { AppError } from '../middleware/error.js';
 import { AssetModel, type IAsset } from '../models/Asset.js';
 import {
   destroy,
   resourceTypeFromMime,
+  signedDownloadUrl,
   uploadStream,
   type UploadResult,
 } from './cloudinary.js';
@@ -57,6 +59,43 @@ export async function listAssets(query: AssetListQuery): Promise<AssetListRespon
     page,
     pageSize,
   };
+}
+
+export async function getAsset(id: string): Promise<Asset> {
+  if (!isValidObjectId(id)) {
+    throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  }
+  const doc = await AssetModel.findById(id);
+  if (doc === null) {
+    throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  }
+  return doc.toAsset();
+}
+
+export async function getAssetDownloadUrl(id: string): Promise<string> {
+  if (!isValidObjectId(id)) {
+    throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  }
+  const doc = await AssetModel.findById(id);
+  if (doc === null) {
+    throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  }
+  return signedDownloadUrl(doc.cloudinaryPublicId, resourceTypeFromMime(doc.mimeType));
+}
+
+export async function deleteAsset(id: string): Promise<void> {
+  if (!isValidObjectId(id)) {
+    throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  }
+  const doc = await AssetModel.findById(id);
+  if (doc === null) {
+    throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  }
+  const { found } = await destroy(doc.cloudinaryPublicId, resourceTypeFromMime(doc.mimeType));
+  if (!found) {
+    console.warn(`Cloudinary asset not found during delete, proceeding with DB removal: ${doc.cloudinaryPublicId}`);
+  }
+  await doc.deleteOne();
 }
 
 function kindFromMime(mimeType: string): AssetKind {

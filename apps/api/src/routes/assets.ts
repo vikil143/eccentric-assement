@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { env } from '../config/env.js';
 import { AppError } from '../middleware/error.js';
 import type { AssetListQuery } from '@asset-manager/shared';
-import { createAsset, listAssets } from '../services/assetService.js';
+import { createAsset, deleteAsset, getAsset, getAssetDownloadUrl, listAssets } from '../services/assetService.js';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -127,6 +127,41 @@ router.post(
 
       const asset = await createAsset(req.file, parsed.data.tags);
       res.status(201).json(asset);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.get(
+  '/:id',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      res.json(await getAsset(req.params['id'] ?? ''));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.get(
+  '/:id/download',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const url = await getAssetDownloadUrl(req.params['id'] ?? '');
+      res.redirect(302, url);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.delete(
+  '/:id',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await deleteAsset(req.params['id'] ?? '');
+      res.status(204).end();
     } catch (err) {
       next(err);
     }

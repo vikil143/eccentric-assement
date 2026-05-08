@@ -74,8 +74,9 @@ export function uploadStream(buffer: Buffer, options: UploadOptions): Promise<Up
 export async function destroy(
   publicId: string,
   resourceType: CloudinaryResourceType,
-): Promise<void> {
-  await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+): Promise<{ found: boolean }> {
+  const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+  return { found: result.result === 'ok' };
 }
 
 export function signedDownloadUrl(
