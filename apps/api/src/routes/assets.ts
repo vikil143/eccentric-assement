@@ -1,10 +1,11 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import multer, { MulterError } from 'multer';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { env } from '../config/env.js';
 import { AppError } from '../middleware/error.js';
 import type { AssetListQuery } from '@asset-manager/shared';
-import { createAsset, deleteAsset, getAsset, getAssetDownloadUrl, listAssets } from '../services/assetService.js';
+import { createAsset, deleteAsset, getAsset, getAssetDownloadUrl, listAssets, listTags } from '../services/assetService.js';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -50,6 +51,37 @@ function parseUpload(req: Request, res: Response, next: NextFunction): void {
       next();
     }
   });
+}
+
+const uploadRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler(req: Request, res: Response) {
+    res.status(429).json({
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Upload limit reached. Try again in 10 minutes.',
+        requestId: req.id,
+      },
+    });
+  },
+});
+
+function logUpload(req: Request, _res: Response, next: NextFunction): void {
+  if (req.file !== undefined) {
+    console.log(
+      JSON.stringify({
+        event: 'upload_received',
+        requestId: req.id,
+        filename: req.file.originalname,
+        sizeBytes: req.file.size,
+        mimeType: req.file.mimetype,
+      }),
+    );
+  }
+  next();
 }
 
 const listQuerySchema = z.object({
@@ -110,7 +142,9 @@ router.get(
 
 router.post(
   '/',
+  uploadRateLimit,
   parseUpload,
+  logUpload,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (req.file === undefined) {
@@ -127,6 +161,18 @@ router.post(
 
       const asset = await createAsset(req.file, parsed.data.tags);
       res.status(201).json(asset);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.get(
+  '/tags',
+  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const tags = await listTags();
+      res.json({ tags });
     } catch (err) {
       next(err);
     }

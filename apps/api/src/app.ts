@@ -7,6 +7,7 @@ import { requestId } from './middleware/requestId.js';
 import { errorHandler } from './middleware/error.js';
 import healthRouter from './routes/health.js';
 import assetsRouter from './routes/assets.js';
+import docsRouter from './routes/docs.js';
 
 export function createApp() {
   const app = express();
@@ -19,6 +20,10 @@ export function createApp() {
 
   app.use(healthRouter);
   app.use('/api/assets', assetsRouter);
+
+  if (env.NODE_ENV !== 'production') {
+    app.use('/api', docsRouter);
+  }
 
   app.use(errorHandler);
 

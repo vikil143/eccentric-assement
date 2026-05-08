@@ -1,0 +1,367 @@
+openapi: "3.0.3"
+info:
+  title: Asset Manager API
+  version: "1.0.0"
+  description: Internal asset management API for the marketing team.
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: Assets
+    description: Asset management operations
+  - name: Health
+    description: Service health check
+
+components:
+  schemas:
+    AssetKind:
+      type: string
+      enum: [image, video, pdf, other]
+      description: Type of asset derived from MIME type
+
+    Asset:
+      type: object
+      required:
+        - id
+        - filename
+        - mimeType
+        - sizeBytes
+        - kind
+        - url
+        - tags
+        - uploadedAt
+        - cloudinaryPublicId
+      properties:
+        id:
+          type: string
+          description: MongoDB ObjectId
+          example: "64a1f2c3d4e5f6a7b8c9d0e1"
+        filename:
+          type: string
+          example: "hero-banner.png"
+        mimeType:
+          type: string
+          example: "image/png"
+        sizeBytes:
+          type: integer
+          minimum: 1
+          example: 102400
+        kind:
+          $ref: "#/components/schemas/AssetKind"
+        url:
+          type: string
+          format: uri
+          description: Cloudinary public URL
+        thumbnailUrl:
+          type: string
+          format: uri
+          description: Cloudinary thumbnail URL (images and videos only)
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 32
+          maxItems: 20
+          example: ["banner", "campaign"]
+        uploadedAt:
+          type: string
+          format: date-time
+        uploadedBy:
+          type: string
+          description: Identifier of the uploader
+        width:
+          type: integer
+          description: Image or video width in pixels
+        height:
+          type: integer
+          description: Image or video height in pixels
+        durationSec:
+          type: number
+          description: Video duration in seconds
+        cloudinaryPublicId:
+          type: string
+          description: Cloudinary public_id used for signed URLs and deletion
+
+    AssetListResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Asset"
+        total:
+          type: integer
+          description: Total number of matching assets
+          example: 42
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 24
+
+    TagsResponse:
+      type: object
+      required: [tags]
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+          description: Distinct, sorted list of tags in use
+          example: ["banner", "campaign", "logo"]
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: "NOT_FOUND"
+            message:
+              type: string
+              example: "Asset not found"
+            requestId:
+              type: string
+              description: Trace ID echoed from X-Request-Id
+
+  parameters:
+    AssetId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: MongoDB ObjectId of the asset
+
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/assets:
+    get:
+      tags: [Assets]
+      summary: List assets
+      operationId: listAssets
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: >
+            Full-text search (≥ 3 chars) or filename prefix match (< 3 chars).
+        - name: kind
+          in: query
+          schema:
+            $ref: "#/components/schemas/AssetKind"
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: Comma-separated tags; all must match (AND logic).
+          example: "banner,campaign"
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Include assets uploaded on or after this timestamp.
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Include assets uploaded on or before this timestamp.
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 24
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest, size_desc]
+            default: newest
+      responses:
+        "200":
+          description: Paginated list of assets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetListResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags: [Assets]
+      summary: Upload a new asset
+      operationId: uploadAsset
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The asset file to upload.
+                tags:
+                  type: string
+                  description: Comma-separated list of tags (max 20, each max 32 chars).
+                  example: "banner,campaign"
+      responses:
+        "201":
+          description: Asset created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "413":
+          description: File exceeds the maximum allowed size
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: No file provided or invalid body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Upload rate limit exceeded (30 per 10 minutes per IP)
+          headers:
+            RateLimit:
+              schema:
+                type: string
+              description: Rate limit status header (draft-7)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Cloudinary upload failed or metadata save failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/assets/tags:
+    get:
+      tags: [Assets]
+      summary: List all tags in use
+      operationId: listTags
+      description: >
+        Returns a distinct, sorted list of every tag that appears on at least
+        one asset. Intended for the filter UI.
+      responses:
+        "200":
+          description: Distinct sorted tags
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagsResponse"
+
+  /api/assets/{id}:
+    parameters:
+      - $ref: "#/components/parameters/AssetId"
+    get:
+      tags: [Assets]
+      summary: Get a single asset
+      operationId: getAsset
+      responses:
+        "200":
+          description: Asset found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "404":
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Assets]
+      summary: Delete an asset
+      operationId: deleteAsset
+      description: Deletes the asset from both Cloudinary and MongoDB.
+      responses:
+        "204":
+          description: Asset deleted successfully
+        "404":
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/assets/{id}/download:
+    parameters:
+      - $ref: "#/components/parameters/AssetId"
+    get:
+      tags: [Assets]
+      summary: Download an asset
+      operationId: downloadAsset
+      description: >
+        Redirects to a short-lived Cloudinary signed download URL.
+        The redirect destination expires quickly and should not be cached.
+      responses:
+        "302":
+          description: Redirect to Cloudinary signed download URL
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+        "404":
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"

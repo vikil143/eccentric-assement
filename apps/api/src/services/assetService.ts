@@ -105,6 +105,11 @@ function kindFromMime(mimeType: string): AssetKind {
   return 'other';
 }
 
+export async function listTags(): Promise<string[]> {
+  const tags = await AssetModel.distinct('tags');
+  return (tags as string[]).sort();
+}
+
 export async function createAsset(
   file: Express.Multer.File,
   tags: string[],
