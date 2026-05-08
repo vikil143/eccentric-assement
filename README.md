@@ -164,6 +164,13 @@ This installs dependencies for all three workspaces (`apps/api`, `apps/web`, `pa
 
 ## Step 4 — Run the Application
 
+> **Before starting:** if you have run the app before, make sure no leftover processes are still holding the ports. If the backend exits with `EADDRINUSE`, run these first and then restart:
+>
+> ```bash
+> lsof -ti:3000 | xargs kill -9 2>/dev/null
+> lsof -ti:5173 | xargs kill -9 2>/dev/null
+> ```
+
 Make sure MongoDB is running (Step 1) and `.env` is configured (Step 2), then:
 
 ```bash
@@ -183,7 +190,7 @@ This starts both apps in parallel using `concurrently`. You will see labeled out
 |---|---|
 | **Frontend** (React + Vite) | http://localhost:5173 |
 | **Backend** (Express API) | http://localhost:3000 |
-| **API Docs** (Swagger UI) | http://localhost:3000/api-docs |
+| **API Docs** (Swagger UI) | http://localhost:3000/api/docs |
 
 Open http://localhost:5173 in your browser to use the application.
 
